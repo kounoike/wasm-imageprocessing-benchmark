@@ -46,7 +46,7 @@ You can have `style` tag in markdown to override the style for the current page.
 Learn more: https://sli.dev/guide/syntax#embedded-styles
 -->
 
-<img style="transform: scale(0.5, 0.5);transform-origin: top right;" src="images/meet_model_card.png"/>
+<img style="transform: scale(0.5, 0.5);transform-origin: top right;" src="https://github.com/kounoike/wasm-imageprocessing-benchmark/raw/master/slide/images/meet_model_card.png"/>
 
 ---
 
