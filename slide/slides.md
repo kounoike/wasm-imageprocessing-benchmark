@@ -39,7 +39,7 @@ The last comment block of each slide will be treated as slide notes. It will be 
 
 - 一時期 [Model Card](https://github.com/PINTO0309/PINTO_model_zoo/blob/main/082_MediaPipe_Meet_Segmentation/Model.Card-Meet.Segmentation.pdf) で Apache License 表記があったが差し替えられたモノ
 - モデルは非常に軽量で高速に動く
-- 使うときは推論実行の他に、前処理/後処理が必要
+- 使うときは推論実行の他に、**前処理**/**後処理**が必要
 
 <!--
 You can have `style` tag in markdown to override the style for the current page.
@@ -56,7 +56,7 @@ Learn more: https://sli.dev/guide/syntax#embedded-styles
 
 - ブラウザでカメラ入力等から得られる画像: RGBAの4チャンネル, Uint8([0, 255])
 - モデル入力: RGBの3チャンネル, Float32([0.0f, 1.0f])
-- 画像サイズ: 今回は**簡略化**のため、リサイズ済み（入力も256x144）とする
+- 画像サイズ: 今回は~~実装がめんどくさい~~**簡略化**のため、リサイズなし（入力画像サイズ＝モデルサイズ）とする
 
 ---
 
@@ -65,10 +65,10 @@ Learn more: https://sli.dev/guide/syntax#embedded-styles
 背景画像差し替え処理の単純な実装
 
 - カメラ画像、背景画像: RGBA, Uint8, 256x144x4
-- モデル出力: Float32, 256x144x2（Ch0:背景confidence値、ch1:前景confidence値）
-- モデル出力の2チャンネルでSoftmax関数にかけて、閾値以上: 前景、それ以外: 背景とみなす
-- 前景部分はカメラ画像を、背景部分は背景画像を使う
-- 後処理リサイズなしで、256x144で出力して終わりとする
+- モデル出力: Float32, 256x144x2（ch0:背景confidence値、ch1:前景confidence値）
+- Softmax関数にかけて、ch0が閾値以上: 前景、それ以外: 背景とみなす
+- 前景部分はカメラ画像を、背景部分は背景画像となるように合成する
+- 後処理もリサイズなしとする
 
 ---
 
