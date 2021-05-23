@@ -87,6 +87,17 @@ $\sum_{i=1}^{n}{y_i}=1$となるため$x$と比べて扱いやすい。
 
 ---
 
+# それぞれの処理の特徴
+
+今回の例では前処理・後処理ともに画素単位で計算が完結する(point operationという)単純な処理
+
+前処理は本当に単純、後処理はちょっと浮動小数点の計算が多めで条件分岐が入って厄介かな？という程度
+
+
+※背景ぼかしにしてガウシアンブラーとかで近傍処理するコードにした方が良いかも
+
+---
+
 # 前処理: JavaScript
 
 まずはシンプルに JavaScript で実装してみる
@@ -323,5 +334,110 @@ public:
 
 ---
 
-# 後処理: これから書く。
+# 後処理: C++
+
+普通に実装
+
+```cpp
+  int postprocess_naive(int width, int height, float threshold) {
+    for(int i = 0; i < width * height; ++i) {
+      float bg = postprocessInferenceResultBuffer[i * 2];
+      float fg = postprocessInferenceResultBuffer[i * 2 + 1];
+      float bgexp = std::expf(bg);
+      float fgexp = std::expf(fg);
+      float val = fgexp / (fgexp + bgexp);
+      if (val > threshold) {
+        postprocessOutputImageBuffer[i * 4] = postprocessInputImageBuffer[i * 4];
+        postprocessOutputImageBuffer[i * 4 + 1] = postprocessInputImageBuffer[i * 4 + 1];
+        postprocessOutputImageBuffer[i * 4 + 2] = postprocessInputImageBuffer[i * 4 + 2];
+        postprocessOutputImageBuffer[i * 4 + 3] = postprocessInputImageBuffer[i * 4 + 3];
+      } else {
+        postprocessOutputImageBuffer[i * 4] = postprocessBackgroundImageBuffer[i * 4];
+        postprocessOutputImageBuffer[i * 4 + 1] = postprocessBackgroundImageBuffer[i * 4 + 1];
+        postprocessOutputImageBuffer[i * 4 + 2] = postprocessBackgroundImageBuffer[i * 4 + 2];
+        postprocessOutputImageBuffer[i * 4 + 3] = postprocessBackgroundImageBuffer[i * 4 + 3];
+      }
+    }
+    return 0;
+  }
+```
+
+---
+
+# 後処理: OpenCV
+
+イマイチ上手く書けてない気がする。何か良い関数が他にあるかも。
+
+```cpp
+  int postprocess_opencv(int width, int height, float threshold) {
+    cv::Mat inputImageMat(height, width, CV_8UC4, postprocessInputImageBuffer);
+    cv::Mat backgroundImageMat(height, width, CV_8UC4, postprocessBackgroundImageBuffer);
+    cv::Mat outputImageMat(height, width, CV_8UC4, postprocessOutputImageBuffer);
+    cv::Mat inferenceResultMat(height, width, CV_32FC2, postprocessInferenceResultBuffer);
+    cv::Mat ch[2];
+    cv::split(inferenceResultMat, ch);
+    cv::Mat bgExp, fgExp, sumMat, softmaxMat, maskMat;
+    cv::exp(ch[0], bgExp);
+    cv::exp(ch[1], fgExp);
+    cv::add(bgExp, fgExp, sumMat);
+    cv::divide(fgExp, sumMat, softmaxMat);
+    softmaxMat.convertTo(maskMat, CV_8U, 255, 0);
+    cv::threshold(maskMat, maskMat, 255 * threshold, 255, cv::THRESH_BINARY);
+    backgroundImageMat.copyTo(outputImageMat);
+    inputImageMat.copyTo(outputImageMat, maskMat);
+
+    return 0;
+  }
+```
+
+---
+
+# 後処理: Halide
+
+
+```cpp
+  int postprocess_halide(int width, int height, float threshold) {
+    auto hal_src = Halide::Runtime::Buffer<uint8_t>::make_interleaved(postprocessInputImageBuffer, width, height, 4);
+    auto hal_bg = Halide::Runtime::Buffer<uint8_t>::make_interleaved(postprocessBackgroundImageBuffer, width, height, 4);
+    auto hal_inf = Halide::Runtime::Buffer<float>::make_interleaved(postprocessInferenceResultBuffer, width, height, 2);
+    auto hal_dst = Halide::Runtime::Buffer<uint8_t>::make_interleaved(postprocessOutputImageBuffer, width, height, 4);
+
+    postprocess_task(hal_src, hal_bg, hal_inf, threshold, hal_dst);
+    return 0;
+  }
+```
+
+```cpp
+  Halide::Func softmax, infExp;
+
+  void generate() {
+    infExp(x, y, c) = Halide::exp(inference(x, y, c));
+    softmax(x, y) = infExp(x, y, 1) / (infExp(x, y, 0) + infExp(x, y, 0));
+    output(x, y, c) = Halide::select(softmax(x, y) > threshold, input(x, y, c), background(x, y, c));
+  }
+```
+
+---
+
+# 後処理: 結果＆考察
+
+対象画像: 1920x1080（だいぶ大きめ）実行時間: 100回実行した平均をms単位で表記
+
+<div>
+
+|実装|SIMDなし|SIMDあり
+|--------|-----:|------:|
+|C++/スクラッチ|17.31|17.24|
+|C++/OpenCV|32.57|23.97|
+|C++/Halide|30.16|13.36|
+
+</div>
+
+<div>
+
+- Halide速い！（SIMD有効のときのみ）
+- OpenCVはうまくフィットしていない感がある
+    - cv::softmax()とかあればきっと速いのだろうけど…（dnnレイヤーならあるけど）
+
+</div>
 
