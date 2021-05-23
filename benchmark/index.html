@@ -1,0 +1,33 @@
+<html lang="ja">
+  <head>
+    <title>benchmark</title>
+    <meta http-equiv="origin-trial" data-origin="localhost" content="Aq3b0tw6HXidz3xT829S1OXc7i1Jxa0cNZnNcKCIrWZ7ERz+u0swp4Vm7ygMdO3ah4q0AqRd+OLXT21sK53DYQgAAABSeyJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0OjgwMDAiLCJmZWF0dXJlIjoiV2ViQXNzZW1ibHlTaW1kIiwiZXhwaXJ5IjoxNjIzODAxNTk5fQ==">
+    <meta http-equiv="origin-trial" data-origin="ngork" content="AuX+27CyIPgWbkRIvZba5lDhwCZFhQHI+sv/vcXLWzhRff0CQ6HqDm4CWgPd09DBgWdQtBArErKD4ECMSc0NNQsAAABeeyJvcmlnaW4iOiJodHRwczovLzc4OTJjMWE2YWM1Yi5uZ3Jvay5pbzo0NDMiLCJmZWF0dXJlIjoiV2ViQXNzZW1ibHlTaW1kIiwiZXhwaXJ5IjoxNjIzODAxNTk5fQ==">
+    <style>
+      table {
+        border-collapse: collapse;
+      }
+      th, td {
+        border: solid 1px;
+      }
+      td {
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="wasm/emscripten/bin/benchmark.js"></script>
+    <script src="wasm/emscripten/bin/benchmark_simd.js"></script>
+    <script src="./index.js"></script>
+    <div id="result"><p>チョット時間カカル・・・</p></div>
+    <table id="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Duration[ms]</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </body>
+</html>
