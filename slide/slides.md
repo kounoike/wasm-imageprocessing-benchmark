@@ -55,7 +55,7 @@ Learn more: https://sli.dev/guide/syntax#embedded-styles
 形式の置き換え
 
 - ブラウザでカメラ入力等から得られる画像: RGBAの4チャンネル, Uint8([0, 255])
-- モデル入力: RGBの3チャンネル, Float32([0.0f, 1.0f])
+- モデル入力(前処理の出力): RGBの3チャンネル, Float32([0.0f, 1.0f])
 - 画像サイズ: 今回は~~実装がめんどくさい~~**簡略化**のため、リサイズなし（入力画像サイズ＝モデルサイズ）とする
 
 ---
@@ -64,8 +64,9 @@ Learn more: https://sli.dev/guide/syntax#embedded-styles
 
 背景画像差し替え処理の単純な実装
 
-- カメラ画像、背景画像: RGBA, Uint8, 256x144x4
-- モデル出力: Float32, 256x144x2（ch0:背景confidence値、ch1:前景confidence値）
+- カメラ画像、背景画像: RGBA, Uint8, WxHx4
+- モデル出力: Float32, WxHHx2（ch0:背景confidence値、ch1:前景confidence値）
+- 結果画像(後処理の出力): RGBA, Uint8, WxHx4
 - Softmax関数にかけて、ch0が閾値以上: 前景、それ以外: 背景とみなす
 - 前景部分はカメラ画像を、背景部分は背景画像となるように合成する
 - 後処理もリサイズなしとする
