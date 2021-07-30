@@ -5,21 +5,9 @@ const width = 1920
 const height = 1080
 // const width = 256
 // const height = 144
+// const width = 640
+// const height = 360
 
-
-const lut = new Float32Array(256)
-for (let i = 0; i < 256; ++i) {
-  lut[i] = i / 255
-}
-function byJavaScriptLut (imageData, width, height) {
-  const array = new Float32Array(width * height * 3)
-  for (let i = 0; i < width * height; ++i) {
-    array[i * 3] = lut[imageData.data[i * 4]]
-    array[i * 3 + 1] = lut[imageData.data[i * 4 + 1]]
-    array[i * 3 + 2] = lut[imageData.data[i * 4 + 2]]
-  }
-  return array
-}
 function byJavaScript (imageData, width, height) {
   const array = new Float32Array(width * height * 3)
   for (let i = 0; i < width * height; ++i) {
@@ -29,6 +17,22 @@ function byJavaScript (imageData, width, height) {
   }
   return array
 }
+
+const lut = new Float32Array(256)
+for (let i = 0; i < 256; ++i) {
+  lut[i] = i / 255
+}
+
+function byJavaScriptLut (imageData, width, height) {
+  const array = new Float32Array(width * height * 3)
+  for (let i = 0; i < width * height; ++i) {
+    array[i * 3] = lut[imageData.data[i * 4]]
+    array[i * 3 + 1] = lut[imageData.data[i * 4 + 1]]
+    array[i * 3 + 2] = lut[imageData.data[i * 4 + 2]]
+  }
+  return array
+}
+
 function byWasm (wasm, func, imageData, width, height) {
   const inputOffset = wasm._getPreprocessInputImageBufferOffset()
   const outputOffset = wasm._getPreprocessOutputImageBufferOffset()
@@ -54,6 +58,15 @@ function postProcessByWasm (wasm, func, imageData, width, height) {
   // )
 }
 
+function jpegDecodeByWasm (wasm, func, jpegData) {
+  try{
+    wasm[func](jpegData.length)
+  }
+  catch(ex) {
+    wasm._showExceptionMessage(ex)
+  }
+}
+
 function byRust (screen, exec, memory, imageData, width, height) {
   const inputOffset = screen.input_pointer()
   const outputOffset = screen.output_pointer()
@@ -67,8 +80,7 @@ function byRust (screen, exec, memory, imageData, width, height) {
   )
 }
 
-const count = 100
-function do_benchmark (proc, name, fn) {
+function do_benchmark (proc, name, fn, count) {
   const msg = `Starting benchmark for ${proc} / ${name} `
   console.log(msg)
   // const resultDiv = document.getElementById('result')
@@ -102,9 +114,21 @@ async function benchmark () {
   const ctx = canvas.getContext('2d')
   const imageData = ctx.createImageData(width, height)
 
+  // JPEG decode/encode
+  const url = "./img/sample.jpg";
+  const resp = await fetch(url);
+  const jpegBlob = await resp.blob();
+  const jpegData = new Uint8Array(await jpegBlob.arrayBuffer())
+
+  const jpegOffset = wasmModule._getJpegImageBuffer()
+  wasmModule.HEAPU8.set(jpegData, jpegOffset)
+  const jpegOffsetSimd = wasmSimdModule._getJpegImageBuffer()
+  wasmSimdModule.HEAPU8.set(jpegData, jpegOffsetSimd)
+
+
   const resultDiv = document.getElementById('result')
   const header = document.createElement('p')
-  header.innerText = `${width}x${height} image RGBA -> RGB -> /255.0 as float, 10 times for warm-up, result: ${count} times avg.`
+  // header.innerText = `${width}x${height} image RGBA -> RGB -> /255.0 as float, 10 times for warm-up, result: ${count} times avg.`
   resultDiv.appendChild(header)
 
   await (async () => {
@@ -114,34 +138,40 @@ async function benchmark () {
         {
           proc: 'Preprocess',
           name: 'JavaScript',
+          count: 100,
           fn: () => byJavaScript(imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'JavaScript(LUT)',
+          count: 100,
           fn: () => byJavaScriptLut(imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'C++',
+          count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_naive', imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'C++(LUT)',
+          count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_lut', imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'OpenCV',
+          count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_opencv', imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'OpenCV(LUT)',
+          count: 100,
           fn: () =>
             byWasm(
               wasmModule,
@@ -154,12 +184,14 @@ async function benchmark () {
         {
           proc: 'Preprocess',
           name: 'Halide',
+          count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_halide', imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'Halide(LUT)',
+          count: 100,
           fn: () =>
             byWasm(
               wasmModule,
@@ -172,6 +204,7 @@ async function benchmark () {
         {
           proc: 'Preprocess',
           name: 'Naive(SIMD)',
+          count: 100,
           fn: () =>
             byWasm(
               wasmSimdModule,
@@ -184,12 +217,14 @@ async function benchmark () {
         {
           proc: 'Preprocess',
           name: 'LUT(SIMD)',
+          count: 100,
           fn: () =>
             byWasm(wasmSimdModule, '_preprocess_lut', imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'OpenCV(SIMD)',
+          count: 100,
           fn: () =>
             byWasm(
               wasmSimdModule,
@@ -202,6 +237,7 @@ async function benchmark () {
         {
           proc: 'Preprocess',
           name: 'OpenCV(LUT/SIMD)',
+          count: 100,
           fn: () =>
             byWasm(
               wasmSimdModule,
@@ -214,12 +250,14 @@ async function benchmark () {
         {
           proc: 'Preprocess',
           name: 'Halide(SIMD)',
+          count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_halide', imageData, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'Halide(LUT/SIMD)',
+          count: 100,
           fn: () =>
             byWasm(
               wasmModule,
@@ -237,6 +275,7 @@ async function benchmark () {
         {
           proc: 'Postprocess',
           name: 'C++',
+          count: 100,
           fn: () =>
             postProcessByWasm(
               wasmModule,
@@ -249,6 +288,7 @@ async function benchmark () {
         {
           proc: 'Postprocess',
           name: 'OpenCV',
+          count: 100,
           fn: () =>
             postProcessByWasm(
               wasmModule,
@@ -261,6 +301,7 @@ async function benchmark () {
         {
           proc: 'Postprocess',
           name: 'Halide',
+          count: 100,
           fn: () =>
             postProcessByWasm(
               wasmModule,
@@ -273,6 +314,7 @@ async function benchmark () {
         {
           proc: 'Postprocess',
           name: 'C++(SIMD)',
+          count: 100,
           fn: () =>
             postProcessByWasm(
               wasmSimdModule,
@@ -285,6 +327,7 @@ async function benchmark () {
         {
           proc: 'Postprocess',
           name: 'OpenCV(SIMD)',
+          count: 100,
           fn: () =>
             postProcessByWasm(
               wasmSimdModule,
@@ -297,6 +340,7 @@ async function benchmark () {
         {
           proc: 'Postprocess',
           name: 'Halide(SIMD)',
+          count: 100,
           fn: () =>
             postProcessByWasm(
               wasmSimdModule,
@@ -306,10 +350,32 @@ async function benchmark () {
               height
             )
         },
+        {
+          proc: 'JPEG decode',
+          name: 'OpenCV',
+          count: 10,
+          fn: () =>
+          jpegDecodeByWasm(
+              wasmModule,
+              '_decode_jpeg',
+              jpegData,
+            )
+        },
+        {
+          proc: 'JPEG decode',
+          name: 'OpenCV(SIMD)',
+          count: 10,
+          fn: () =>
+          jpegDecodeByWasm(
+              wasmSimdModule,
+              '_decode_jpeg',
+              jpegData,
+            )
+        },
       ]
 
       for (const benchmark of benchmarks) {
-        do_benchmark(benchmark.proc, benchmark.name, benchmark.fn)
+        do_benchmark(benchmark.proc, benchmark.name, benchmark.fn, benchmark.count)
       }
     })
   })()

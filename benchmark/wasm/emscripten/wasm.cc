@@ -5,6 +5,7 @@
 
 // for OpenCV
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 // for Halide
 #include <HalideBuffer.h>
@@ -24,11 +25,18 @@ namespace {
   float lut[256];
   bool lut_computed = false;
 
- // for postproces tasks
- float postprocessInferenceResultBuffer[MAX_WIDTH * MAX_HEIGHT * 2];
- unsigned char postprocessInputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
- unsigned char postprocessBackgroundImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
- unsigned char postprocessOutputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
+  // for postproces tasks
+  float postprocessInferenceResultBuffer[MAX_WIDTH * MAX_HEIGHT * 2];
+  unsigned char postprocessInputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
+  unsigned char postprocessBackgroundImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
+  unsigned char postprocessOutputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
+
+  // JPEG encode/decode
+  const int MAX_JPEG_LENGTH = 20 * 1024 * 1024;
+  const int MAX_JPEG_WIDTH = 5000;
+  const int MAX_JPEG_HEIGHT = 2700;
+  unsigned char jpegImageBuffer[MAX_JPEG_LENGTH];
+  unsigned char jpegLoadedImageBuffer[MAX_JPEG_WIDTH * MAX_JPEG_HEIGHT * 3];
 }
 
 extern "C" {
@@ -199,6 +207,27 @@ extern "C" {
     auto hal_dst = Halide::Runtime::Buffer<uint8_t>::make_interleaved(postprocessOutputImageBuffer, width, height, 4);
 
     postprocess_task(hal_src, hal_bg, hal_inf, threshold, hal_dst);
+    return 0;
+  }
+
+
+  // JPEG Decode
+  EMSCRIPTEN_KEEPALIVE
+  unsigned char * getJpegImageBuffer() {
+    return jpegImageBuffer;
+  }
+
+  EMSCRIPTEN_KEEPALIVE
+  unsigned char * getJpegLoadedImageBuffer() {
+    return jpegLoadedImageBuffer;
+  }
+
+  EMSCRIPTEN_KEEPALIVE
+  int decode_jpeg(int length) {
+    std::vector<uint8_t> buf(jpegImageBuffer, jpegImageBuffer + length);
+    cv::Mat jpegImageMat(MAX_JPEG_HEIGHT, MAX_JPEG_WIDTH, CV_8UC3, jpegLoadedImageBuffer);
+    cv::Mat tmpMat = cv::imdecode(cv::Mat(buf), cv::IMREAD_UNCHANGED);
+    tmpMat.copyTo(jpegImageMat);
     return 0;
   }
 }
