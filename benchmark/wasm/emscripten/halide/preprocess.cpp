@@ -30,8 +30,9 @@ public:
 
 
 
-    output.compute_root();
-    output.parallel(y).vectorize(x, 16).reorder(c, x, y).unroll(c);
+    // output.compute_root();
+    // output.parallel(y).vectorize(x, 16).reorder(c, x, y).unroll(c);
+    output.reorder(c, x, y).unroll(c);
   }
 };
 

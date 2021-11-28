@@ -13,6 +13,9 @@ add_link_options(
   "SHELL:-s ASSERTIONS=1"
   "SHELL:-s DISABLE_EXCEPTION_CATCHING=0"
 )
+add_compile_options(
+  "-O3"
+)
 file(GLOB sources "*.cc")
 add_executable(${JS_NAME} ${sources})
 add_executable(${JS_SIMD_NAME} ${sources})

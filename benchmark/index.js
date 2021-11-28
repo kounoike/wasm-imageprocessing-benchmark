@@ -133,6 +133,7 @@ async function benchmark () {
 
   await (async () => {
     return Promise.all([rsMod, rsBg]).then(([{ Screen, exec }, { memory }]) => {
+      console.log(wasmSimdModule)
       const screen = new Screen(width, height)
       const benchmarks = [
         {
@@ -223,6 +224,32 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
+          name: 'byHand SIMD(SIMD)',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdModule,
+              '_preprocess_simd',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'byHand SIMD(LUT/SIMD)',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdModule,
+              '_preprocess_simd_lut',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
           name: 'OpenCV(SIMD)',
           count: 100,
           fn: () =>
@@ -273,26 +300,52 @@ async function benchmark () {
           fn: () => byRust(screen, exec, memory, imageData, width, height)
         },
         {
-          proc: 'Postprocess',
+          proc: 'Postprocess(brend)',
           name: 'C++',
           count: 100,
           fn: () =>
             postProcessByWasm(
               wasmModule,
-              '_postprocess_naive',
+              '_postprocess_naive_brend',
               imageData,
               width,
               height
             )
         },
         {
-          proc: 'Postprocess',
+          proc: 'Postprocess(threshold)',
+          name: 'C++',
+          count: 100,
+          fn: () =>
+            postProcessByWasm(
+              wasmModule,
+              '_postprocess_naive_threshold',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Postprocess(brend)',
           name: 'OpenCV',
           count: 100,
           fn: () =>
             postProcessByWasm(
               wasmModule,
-              '_postprocess_opencv',
+              '_postprocess_opencv_brend',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Postprocess(threshold)',
+          name: 'OpenCV',
+          count: 100,
+          fn: () =>
+            postProcessByWasm(
+              wasmModule,
+              '_postprocess_opencv_threshold',
               imageData,
               width,
               height
@@ -312,26 +365,52 @@ async function benchmark () {
             )
         },
         {
-          proc: 'Postprocess',
+          proc: 'Postprocess(brend)',
           name: 'C++(SIMD)',
           count: 100,
           fn: () =>
             postProcessByWasm(
               wasmSimdModule,
-              '_postprocess_naive',
+              '_postprocess_naive_brend',
               imageData,
               width,
               height
             )
         },
         {
-          proc: 'Postprocess',
+          proc: 'Postprocess(threshold)',
+          name: 'C++(SIMD)',
+          count: 100,
+          fn: () =>
+            postProcessByWasm(
+              wasmSimdModule,
+              '_postprocess_naive_threshold',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Postprocess(brend)',
           name: 'OpenCV(SIMD)',
           count: 100,
           fn: () =>
             postProcessByWasm(
               wasmSimdModule,
-              '_postprocess_opencv',
+              '_postprocess_opencv_brend',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Postprocess(threshold)',
+          name: 'OpenCV(SIMD)',
+          count: 100,
+          fn: () =>
+            postProcessByWasm(
+              wasmSimdModule,
+              '_postprocess_opencv_threshold',
               imageData,
               width,
               height
@@ -350,28 +429,28 @@ async function benchmark () {
               height
             )
         },
-        {
-          proc: 'JPEG decode',
-          name: 'OpenCV',
-          count: 10,
-          fn: () =>
-          jpegDecodeByWasm(
-              wasmModule,
-              '_decode_jpeg',
-              jpegData,
-            )
-        },
-        {
-          proc: 'JPEG decode',
-          name: 'OpenCV(SIMD)',
-          count: 10,
-          fn: () =>
-          jpegDecodeByWasm(
-              wasmSimdModule,
-              '_decode_jpeg',
-              jpegData,
-            )
-        },
+        // {
+        //   proc: 'JPEG decode',
+        //   name: 'OpenCV',
+        //   count: 10,
+        //   fn: () =>
+        //   jpegDecodeByWasm(
+        //       wasmModule,
+        //       '_decode_jpeg',
+        //       jpegData,
+        //     )
+        // },
+        // {
+        //   proc: 'JPEG decode',
+        //   name: 'OpenCV(SIMD)',
+        //   count: 10,
+        //   fn: () =>
+        //   jpegDecodeByWasm(
+        //       wasmSimdModule,
+        //       '_decode_jpeg',
+        //       jpegData,
+        //     )
+        // },
       ]
 
       for (const benchmark of benchmarks) {

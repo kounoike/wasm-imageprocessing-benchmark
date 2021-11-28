@@ -1,0 +1,25 @@
+<heml>
+  <head>
+    <title>PyTorch Wasm test</title>
+    <script src="wasm/bin/demo.js"></script>
+    <script>
+      function loaded() {
+        (async () => {
+          const wasm = await createDemoModule();
+          console.log("wasm loaded", wasm);
+          try{
+            wasm._test();
+          } catch(ex) {
+            console.log("exception:", ex)
+            wasm._showExceptionMessage(ex)
+          }
+        })();
+      }
+      console.log("script start")
+      loaded();
+    </script>
+  </head>
+  <body>
+    <div id="log"></div>
+  </body>
+</heml>

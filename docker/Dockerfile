@@ -4,18 +4,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y
 RUN apt-get install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    cmake \
-    curl \
-    git \
-    gnupg \
-    nodejs \
-    python \
-    python3-dev \
-    python3-numpy \
-    rsync \
-    wget
+  build-essential \
+  ca-certificates \
+  cmake \
+  curl \
+  git \
+  gnupg \
+  nodejs \
+  python \
+  python3-dev \
+  python3-numpy \
+  rsync \
+  wget
 
 ### EMSCRIPTEN for base
 RUN git clone https://github.com/emscripten-core/emsdk.git --depth 1
@@ -69,7 +69,7 @@ ENV OPENCV_CONFIG_FLAG="\
   --cmake_option=-DWITH_OPENJPEG=OFF \
   --cmake_option=-DWITH_JASPER=OFF \
   --cmake_option=-DWITH_OPENEXR=OFF \
-"
+  "
 
 WORKDIR /
 RUN git clone https://github.com/opencv/opencv.git -b 4.5.2 --depth 1
@@ -81,9 +81,9 @@ RUN python3  platforms/js/build_js.py build_wasm_simd_threads ${OPENCV_CONFIG_FL
 
 ENV OPENCV_JS_WHITELIST /opencv/platforms/js/opencv_js.config.py
 
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd_threads
+RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm --config Release
+RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd --config Release
+RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd_threads --config Release
 
 RUN mkdir -p /opencv_build/wasm && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm --prefix /opencv_build/wasm
 RUN mkdir -p /opencv_build/wasm_simd && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm_simd --prefix /opencv_build/wasm_simd
@@ -104,6 +104,54 @@ RUN wget -O halide.tar.gz ${HALIDE_RELEASE_PKG}
 RUN tar zxvf halide.tar.gz
 RUN mv Halide-* Halide
 
+
+FROM base AS pytorch_builder
+RUN apt-get install -y --no-install-recommends python3 python3-venv python3-pip unzip wget
+WORKDIR /
+RUN git clone --recursive https://github.com/pytorch/pytorch.git -b v1.9.0 --depth 1
+COPY *.patch .
+WORKDIR /pytorch
+RUN git checkout -b v1.9.0
+RUN patch -p1 < /pytorch.patch
+WORKDIR /pytorch/third_party/cpuinfo
+RUN patch -p1 < /cpuinfo.patch
+WORKDIR /pytorch/third_party/XNNPACK
+RUN patch -p1 < /xnnpack.patch
+WORKDIR /pytorch/build
+RUN pip3 install -r ../requirements.txt
+ARG CMAKE_OPTS="\
+  -DBUILD_TEST=OFF \
+  -DBUILD_PYTHON=OFF \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DUSE_LLVM=ON \
+  -DUSE_CCACHE=OFF \
+  -DUSE_CUDA=OFF \
+  -DUSE_ROCM=OFF \
+  -DUSE_MKLDNN=OFF \
+  -DUSE_NUMPY=OFF \
+  -DUSE_KINETO=OFF \
+  -DUSE_DISTRIBUTED=OFF \
+  -DUSE_PYTORCH_QNNPACK=OFF \
+  -DUSE_NNPACK=OFF \
+  -DUSE_QNNPACK=OFF \
+  -DUSE_XNNPACK=ON \
+  -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+  -DPYTHON_EXECUTABLE=/usr/bin/python3 \
+  -DCMAKE_CXX_FLAGS=-msimd128 \
+  "
+#/emsdk/upstream/emscripten/emcmake cmake   -DBUILD_TEST=OFF   -DBUILD_PYTHON=OFF   -DBUILD_SHARED_LIBS=OFF   -DUSE_CUDA=OFF 
+# -DUSE_ROCM=OFF   -DUSE_MKLDNN=OFF   -DUSE_NUMPY=OFF   -DUSE_KINETO=OFF   -DUSE_DISTRIBUTED=OFF   -DUSE_EIGEN_FOR_BLAS=ON
+# -DUSE_PYTORCH_QNNPACK=OFF   -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY   -DCOMPILER_WORKS=TRUE  
+# -DLIBRARY_TYPE=STATIC   -DPYTHON_EXECUTABLE=/usr/bin/python3 -DUSE_LLVM=ON 
+# -DCOMPILE_OPTIONS='-fexceptions -msimd128' -DCMAKE_CXX_FLAGS='-fexceptions -msimd128' ..
+
+# /emsdk/upstream/emscripten/emcmake cmake -DBUILD_TEST=OFF   -DBUILD_PYTHON=OFF   -DBUILD_SHARED_LIBS=OFF   -DUSE_LLVM=ON   -DUSE_CUDA=OFF   -DUSE_ROCM=OFF   -DUSE_MKLDNN=OFF   -DUSE_NUMPY=OFF   -DUSE_KINETO=OFF   -DUSE_DISTRIBUTED=OFF   -DUSE_PYTORCH_QNNPACK=OFF   -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY   -DPYTHON_EXECUTABLE=/usr/bin/python3   -DINTERN_BUILD_MOBILE=ON   -DCMAKE_CXX_FLAGS="-fexceptions -msimd128" -G"Unix Makefiles" ..
+
+ENV BUILD_PYTORCH_MOBILE_WITH_HOST_TOOLCHAIN=1
+RUN /emsdk/upstream/emscripten/emcmake cmake ${CMAKE_OPTS} ..
+RUN /emsdk/upstream/emscripten/emmake cmake --build . --config Release -j$(nproc)
+RUN /emsdk/upstream/emscripten/emmake cmake --install . --prefix /pytorch_build
+
 ###
 FROM base AS artifact
 WORKDIR /
@@ -113,6 +161,10 @@ WORKDIR /
 COPY --from=opencv_builder /opencv_build /opencv_build
 # COPY --from=onnx_builder /onnxruntime /onnxruntime
 COPY --from=halide_builder /Halide /Halide
+# COPY --from=pytorch_builder /libtorch_build /libtorch_build
+COPY --from=pytorch_builder /pytorch /pytorch
+# COPY --from=pytorch_builder /protoc /protoc
+COPY --from=pytorch_builder /pytorch_build /pytorch_build
 
 # COPY --from=tensorflow_builder /root/.cache /root/.cache
 # COPY --from=tensorflow_builder /tflite /tflite

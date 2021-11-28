@@ -22,7 +22,7 @@ pushd /wasm
   mkdir -p build
   pushd build
     emmake cmake -DCMAKE_BUILD_TYPE=Release ..
-    emmake cmake --build .
+    emmake cmake --build . --config Release
     mv *.wasm *.js /wasm/bin
   popd
   rm -r build

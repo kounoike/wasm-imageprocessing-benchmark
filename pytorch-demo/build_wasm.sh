@@ -1,0 +1,1 @@
+docker run -v $(pwd)/wasm:/wasm wasm_benchmark_builder /bin/bash /wasm/build.sh
