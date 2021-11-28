@@ -45,6 +45,20 @@ const int MAX_JPEG_WIDTH = 5000;
 const int MAX_JPEG_HEIGHT = 2700;
 unsigned char jpegImageBuffer[MAX_JPEG_LENGTH];
 unsigned char jpegLoadedImageBuffer[MAX_JPEG_WIDTH * MAX_JPEG_HEIGHT * 3];
+
+// struct
+struct alignas(32) RGBA8U {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t a;
+};
+
+struct RGB32F {
+  float r;
+  float g;
+  float b;
+};
 }  // namespace
 
 extern "C" {
@@ -97,10 +111,37 @@ EMSCRIPTEN_KEEPALIVE
 int preprocess_lut_u32(int width, int height) {
   uint32_t *inputBuffer32 = (uint32_t *)inputImageBuffer;
   for (int i = 0; i < width * height; ++i) {
-    uint32_t rgba = inputBuffer32[i];
+    const uint32_t &rgba = inputBuffer32[i];
     outputImageBuffer[i * 3] = lut[rgba & 0xff];
-    outputImageBuffer[i * 3 + 1] = lut[rgba & 0xff00 >> 8];
-    outputImageBuffer[i * 3 + 2] = lut[rgba & 0xff0000 >> 16];
+    outputImageBuffer[i * 3 + 1] = lut[rgba >> 8 & 0xff];
+    outputImageBuffer[i * 3 + 2] = lut[rgba >> 16 & 0xff];
+  }
+  return 0;
+}
+
+// by LUT Read as struct
+EMSCRIPTEN_KEEPALIVE
+int preprocess_lut_struct(int width, int height) {
+  RGBA8U *inputBuffer = (RGBA8U *)inputImageBuffer;
+  for (int i = 0; i < width * height; ++i) {
+    const RGBA8U &rgba = inputBuffer[i];
+    outputImageBuffer[i * 3] = lut[rgba.r];
+    outputImageBuffer[i * 3 + 1] = lut[rgba.g];
+    outputImageBuffer[i * 3 + 2] = lut[rgba.b];
+  }
+  return 0;
+}
+
+// by LUT Read as UINT32, Write as struct
+EMSCRIPTEN_KEEPALIVE
+int preprocess_lut_u32_struct(int width, int height) {
+  uint32_t *inputBuffer32 = (uint32_t *)inputImageBuffer;
+  RGB32F *outputBuffer = (RGB32F *)outputImageBuffer;
+  for (int i = 0; i < width * height; ++i) {
+    uint32_t rgba = inputBuffer32[i];
+    outputBuffer[i] = RGB32F{.r = lut[rgba & 0xff],
+                             .g = lut[(rgba >> 8) & 0xff],
+                             .b = lut[(rgba >> 16) & 0xff]};
   }
   return 0;
 }
@@ -111,12 +152,12 @@ int preprocess_lut_u64(int width, int height) {
   uint64_t *inputBuffer64 = (uint64_t *)inputImageBuffer;
   for (int i = 0; i < width * height / 2; ++i) {
     uint64_t rgba2 = inputBuffer64[i];
-    outputImageBuffer[i * 3] = lut[rgba2 & 0xff];
-    outputImageBuffer[i * 3 + 1] = lut[rgba2 & 0xff00 >> 8];
-    outputImageBuffer[i * 3 + 2] = lut[rgba2 & 0xff0000 >> 16];
-    outputImageBuffer[i * 3 + 3] = lut[rgba2 & 0xff00000000LLU >> 32];
-    outputImageBuffer[i * 3 + 4] = lut[rgba2 & 0xff0000000000LLU >> 40];
-    outputImageBuffer[i * 3 + 5] = lut[rgba2 & 0xff000000000000LLU >> 48];
+    outputImageBuffer[i * 3 + 0] = lut[(rgba2 & 0x00000000000000ffLLU)];
+    outputImageBuffer[i * 3 + 1] = lut[(rgba2 & 0x000000000000ff00LLU) >> 8];
+    outputImageBuffer[i * 3 + 2] = lut[(rgba2 & 0x0000000000ff0000LLU) >> 16];
+    outputImageBuffer[i * 3 + 3] = lut[(rgba2 & 0x000000ff00000000LLU) >> 32];
+    outputImageBuffer[i * 3 + 4] = lut[(rgba2 & 0x0000ff0000000000LLU) >> 40];
+    outputImageBuffer[i * 3 + 5] = lut[(rgba2 & 0x00ff000000000000LLU) >> 48];
   }
   return 0;
 }

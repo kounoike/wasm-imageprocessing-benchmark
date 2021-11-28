@@ -22,7 +22,7 @@ add_executable(${JS_SIMD_NAME} ${sources})
 target_link_options(${JS_NAME} PRIVATE 
   "SHELL:-s EXPORT_NAME=createBenchmarkModule"
 )
-target_compile_options(${JS_SIMD_NAME} PRIVATE "-O3" "-msimd128")
+# target_compile_options(${JS_SIMD_NAME} PRIVATE "-O3" "-msimd128")
 target_link_options(${JS_SIMD_NAME} PRIVATE 
   "SHELL:-s EXPORT_NAME=createBenchmarkSimdModule"
 )
