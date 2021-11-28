@@ -20,8 +20,7 @@ RUN apt-get install -y --no-install-recommends \
 ### EMSCRIPTEN for base
 RUN git clone https://github.com/emscripten-core/emsdk.git --depth 1
 WORKDIR /emsdk
-# with 2.0.20, building opencv simd version failed...
-RUN ./emsdk install 2.0.26 && ./emsdk activate 2.0.26
+RUN ./emsdk install 3.0.0 && ./emsdk activate 3.0.0
 
 
 # ### STAGE:tensorflow_builder
@@ -72,8 +71,8 @@ ENV OPENCV_CONFIG_FLAG="\
   "
 
 WORKDIR /
-RUN git clone https://github.com/opencv/opencv.git -b 4.5.2 --depth 1
-RUN git -C /opencv checkout -b 4.5.2
+RUN git clone https://github.com/opencv/opencv.git -b 4.5.4 --depth 1
+RUN git -C /opencv checkout -b 4.5.4
 WORKDIR /opencv
 RUN python3  platforms/js/build_js.py build_wasm              ${OPENCV_CONFIG_FLAG}
 RUN python3  platforms/js/build_js.py build_wasm_simd         ${OPENCV_CONFIG_FLAG} --simd
@@ -83,7 +82,7 @@ ENV OPENCV_JS_WHITELIST /opencv/platforms/js/opencv_js.config.py
 
 RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm --config Release
 RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd --config Release
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd_threads --config Release
+# RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd_threads --config Release
 
 RUN mkdir -p /opencv_build/wasm && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm --prefix /opencv_build/wasm
 RUN mkdir -p /opencv_build/wasm_simd && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm_simd --prefix /opencv_build/wasm_simd
@@ -98,7 +97,7 @@ RUN mkdir -p /opencv_build/wasm_simd && /emsdk/upstream/emscripten/emmake cmake 
 
 ### STAGE:Halide_builder
 FROM base AS halide_builder
-ENV HALIDE_RELEASE_PKG=https://github.com/halide/Halide/releases/download/v12.0.1/Halide-12.0.1-x86-64-linux-5dabcaa9effca1067f907f6c8ea212f3d2b1d99a.tar.gz
+ENV HALIDE_RELEASE_PKG=https://github.com/halide/Halide/releases/download/v13.0.1/Halide-13.0.1-x86-64-linux-fb39d7e3149c0ee1e848bb9957be2ea18765c35d.tar.gz
 WORKDIR /
 RUN wget -O halide.tar.gz ${HALIDE_RELEASE_PKG}
 RUN tar zxvf halide.tar.gz
@@ -162,9 +161,9 @@ COPY --from=opencv_builder /opencv_build /opencv_build
 # COPY --from=onnx_builder /onnxruntime /onnxruntime
 COPY --from=halide_builder /Halide /Halide
 # COPY --from=pytorch_builder /libtorch_build /libtorch_build
-COPY --from=pytorch_builder /pytorch /pytorch
+# COPY --from=pytorch_builder /pytorch /pytorch
 # COPY --from=pytorch_builder /protoc /protoc
-COPY --from=pytorch_builder /pytorch_build /pytorch_build
+# COPY --from=pytorch_builder /pytorch_build /pytorch_build
 
 # COPY --from=tensorflow_builder /root/.cache /root/.cache
 # COPY --from=tensorflow_builder /tflite /tflite

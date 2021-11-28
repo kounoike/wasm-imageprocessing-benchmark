@@ -297,6 +297,7 @@ async function benchmark () {
         {
           proc: 'Preprocess',
           name: 'Rust',
+          count: 100,
           fn: () => byRust(screen, exec, memory, imageData, width, height)
         },
         {
