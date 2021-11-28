@@ -1,5 +1,6 @@
 extern crate wasm_bindgen;
 
+use array_macro::*;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -56,11 +57,32 @@ impl Screen {
 }
 
 #[wasm_bindgen]
-pub fn exec(screen: &mut Screen) {
+pub fn exec1(screen: &mut Screen) {
   for i in 0..screen.width * screen.height {
     screen.output_bytes[i * 3] = (screen.input_bytes[i * 4] as f32) / 255f32;
     screen.output_bytes[i * 3 + 1] = (screen.input_bytes[i * 4 + 1] as f32) / 255f32;
     screen.output_bytes[i * 3 + 2] = (screen.input_bytes[i * 4 + 2] as f32) / 255f32;
+  }
+}
+
+#[wasm_bindgen]
+pub fn exec2(screen: &mut Screen) {
+  let output_bytes = &mut screen.output_bytes;
+  let input_bytes = &screen.input_bytes;
+  for i in 0..screen.width * screen.height {
+    output_bytes[i * 3] = (input_bytes[i * 4] as f32) / 255f32;
+    output_bytes[i * 3 + 1] = (input_bytes[i * 4 + 1] as f32) / 255f32;
+    output_bytes[i * 3 + 2] = (input_bytes[i * 4 + 2] as f32) / 255f32;
+  }
+}
+
+#[wasm_bindgen]
+pub fn exec_lut(screen: &mut Screen) {
+  let lut: [f32; 256] = array![i => (i as f32) / 255f32; 256];
+  for i in 0..screen.width * screen.height {
+    screen.output_bytes[i * 3] = lut[screen.input_bytes[i * 4] as usize];
+    screen.output_bytes[i * 3 + 1] = lut[screen.input_bytes[i * 4 + 1] as usize];
+    screen.output_bytes[i * 3 + 2] = lut[screen.input_bytes[i * 4 + 2] as usize];
   }
 }
 

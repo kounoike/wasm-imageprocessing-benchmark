@@ -67,12 +67,12 @@ function jpegDecodeByWasm (wasm, func, jpegData) {
   }
 }
 
-function byRust (screen, exec, memory, imageData, width, height) {
+function byRust (screen, func, memory, imageData, width, height) {
   const inputOffset = screen.input_pointer()
   const outputOffset = screen.output_pointer()
   const inputArray = new Uint8Array(memory.buffer)
   inputArray.set(imageData.data, inputOffset)
-  exec(screen)
+  func(screen)
   const array = new Uint8Array(
     memory.buffer,
     outputOffset,
@@ -109,6 +109,9 @@ function do_benchmark (proc, name, fn, count) {
 async function benchmark () {
   const wasmModule = await createBenchmarkModule()
   const wasmSimdModule = await createBenchmarkSimdModule()
+  console.log(wasmModule)
+  wasmModule._initialize_lut()
+  wasmSimdModule._initialize_lut()
 
   const canvas = new OffscreenCanvas(width, height)
   const ctx = canvas.getContext('2d')
@@ -132,8 +135,7 @@ async function benchmark () {
   resultDiv.appendChild(header)
 
   await (async () => {
-    return Promise.all([rsMod, rsBg]).then(([{ Screen, exec }, { memory }]) => {
-      console.log(wasmSimdModule)
+    return Promise.all([rsMod, rsBg]).then(([{ Screen, exec1, exec_lut }, { memory }]) => {
       const screen = new Screen(width, height)
       const benchmarks = [
         {
@@ -161,6 +163,13 @@ async function benchmark () {
           count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_lut', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(LUT/UINT32)',
+          count: 100,
+          fn: () =>
+            byWasm(wasmModule, '_preprocess_lut_u32', imageData, width, height)
         },
         {
           proc: 'Preprocess',
@@ -221,6 +230,13 @@ async function benchmark () {
           count: 100,
           fn: () =>
             byWasm(wasmSimdModule, '_preprocess_lut', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/LUT/UINT32)',
+          count: 100,
+          fn: () =>
+            byWasm(wasmSimdModule, '_preprocess_lut_u32', imageData, width, height)
         },
         {
           proc: 'Preprocess',
@@ -296,140 +312,146 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'Rust',
+          name: 'Rust 1',
           count: 100,
-          fn: () => byRust(screen, exec, memory, imageData, width, height)
+          fn: () => byRust(screen, exec1, memory, imageData, width, height)
         },
         {
-          proc: 'Postprocess(brend)',
-          name: 'C++',
+          proc: 'Preprocess',
+          name: 'Rust LUT',
           count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmModule,
-              '_postprocess_naive_brend',
-              imageData,
-              width,
-              height
-            )
+          fn: () => byRust(screen, exec_lut, memory, imageData, width, height)
         },
-        {
-          proc: 'Postprocess(threshold)',
-          name: 'C++',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmModule,
-              '_postprocess_naive_threshold',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess(brend)',
-          name: 'OpenCV',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmModule,
-              '_postprocess_opencv_brend',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess(threshold)',
-          name: 'OpenCV',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmModule,
-              '_postprocess_opencv_threshold',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess',
-          name: 'Halide',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmModule,
-              '_postprocess_halide',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess(brend)',
-          name: 'C++(SIMD)',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmSimdModule,
-              '_postprocess_naive_brend',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess(threshold)',
-          name: 'C++(SIMD)',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmSimdModule,
-              '_postprocess_naive_threshold',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess(brend)',
-          name: 'OpenCV(SIMD)',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmSimdModule,
-              '_postprocess_opencv_brend',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess(threshold)',
-          name: 'OpenCV(SIMD)',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmSimdModule,
-              '_postprocess_opencv_threshold',
-              imageData,
-              width,
-              height
-            )
-        },
-        {
-          proc: 'Postprocess',
-          name: 'Halide(SIMD)',
-          count: 100,
-          fn: () =>
-            postProcessByWasm(
-              wasmSimdModule,
-              '_postprocess_halide',
-              imageData,
-              width,
-              height
-            )
-        },
+        // {
+        //   proc: 'Postprocess(brend)',
+        //   name: 'C++',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmModule,
+        //       '_postprocess_naive_brend',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess(threshold)',
+        //   name: 'C++',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmModule,
+        //       '_postprocess_naive_threshold',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess(brend)',
+        //   name: 'OpenCV',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmModule,
+        //       '_postprocess_opencv_brend',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess(threshold)',
+        //   name: 'OpenCV',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmModule,
+        //       '_postprocess_opencv_threshold',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess',
+        //   name: 'Halide',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmModule,
+        //       '_postprocess_halide',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess(brend)',
+        //   name: 'C++(SIMD)',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmSimdModule,
+        //       '_postprocess_naive_brend',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess(threshold)',
+        //   name: 'C++(SIMD)',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmSimdModule,
+        //       '_postprocess_naive_threshold',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess(brend)',
+        //   name: 'OpenCV(SIMD)',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmSimdModule,
+        //       '_postprocess_opencv_brend',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess(threshold)',
+        //   name: 'OpenCV(SIMD)',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmSimdModule,
+        //       '_postprocess_opencv_threshold',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
+        // {
+        //   proc: 'Postprocess',
+        //   name: 'Halide(SIMD)',
+        //   count: 100,
+        //   fn: () =>
+        //     postProcessByWasm(
+        //       wasmSimdModule,
+        //       '_postprocess_halide',
+        //       imageData,
+        //       width,
+        //       height
+        //     )
+        // },
         // {
         //   proc: 'JPEG decode',
         //   name: 'OpenCV',
