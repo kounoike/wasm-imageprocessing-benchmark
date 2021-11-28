@@ -173,6 +173,13 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
+          name: 'C++(LUT/UINT64)',
+          count: 100,
+          fn: () =>
+            byWasm(wasmModule, '_preprocess_lut_u64', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
           name: 'OpenCV',
           count: 100,
           fn: () =>
@@ -237,6 +244,13 @@ async function benchmark () {
           count: 100,
           fn: () =>
             byWasm(wasmSimdModule, '_preprocess_lut_u32', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/LUT/UINT64)',
+          count: 100,
+          fn: () =>
+            byWasm(wasmSimdModule, '_preprocess_lut_u64', imageData, width, height)
         },
         {
           proc: 'Preprocess',

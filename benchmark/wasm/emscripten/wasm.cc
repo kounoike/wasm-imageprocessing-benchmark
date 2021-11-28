@@ -105,6 +105,22 @@ int preprocess_lut_u32(int width, int height) {
   return 0;
 }
 
+// by LUT Read as UINT64
+EMSCRIPTEN_KEEPALIVE
+int preprocess_lut_u64(int width, int height) {
+  uint64_t *inputBuffer64 = (uint64_t *)inputImageBuffer;
+  for (int i = 0; i < width * height / 2; ++i) {
+    uint64_t rgba2 = inputBuffer64[i];
+    outputImageBuffer[i * 3] = lut[rgba2 & 0xff];
+    outputImageBuffer[i * 3 + 1] = lut[rgba2 & 0xff00 >> 8];
+    outputImageBuffer[i * 3 + 2] = lut[rgba2 & 0xff0000 >> 16];
+    outputImageBuffer[i * 3 + 3] = lut[rgba2 & 0xff00000000LLU >> 32];
+    outputImageBuffer[i * 3 + 4] = lut[rgba2 & 0xff0000000000LLU >> 40];
+    outputImageBuffer[i * 3 + 5] = lut[rgba2 & 0xff000000000000LLU >> 48];
+  }
+  return 0;
+}
+
 // by Hand SIMD
 EMSCRIPTEN_KEEPALIVE
 int preprocess_simd(int width, int height) {
