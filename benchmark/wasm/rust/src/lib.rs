@@ -7,6 +7,7 @@ use wasm_bindgen::prelude::*;
 pub struct Screen {
   input_bytes: Vec<u8>,
   output_bytes: Vec<f32>,
+  lut: [f32; 256],
   #[wasm_bindgen(readonly)]
   pub width: usize,
   #[wasm_bindgen(readonly)]
@@ -34,6 +35,7 @@ impl Screen {
     Screen {
       input_bytes: create_buffer_u8(width, height, 4),
       output_bytes: create_buffer_f32(width, height, 3),
+      lut: array![i => (i as f32) / 255f32; 256],
       width,
       height,
     }
@@ -78,11 +80,10 @@ pub fn exec2(screen: &mut Screen) {
 
 #[wasm_bindgen]
 pub fn exec_lut(screen: &mut Screen) {
-  let lut: [f32; 256] = array![i => (i as f32) / 255f32; 256];
   for i in 0..screen.width * screen.height {
-    screen.output_bytes[i * 3] = lut[screen.input_bytes[i * 4] as usize];
-    screen.output_bytes[i * 3 + 1] = lut[screen.input_bytes[i * 4 + 1] as usize];
-    screen.output_bytes[i * 3 + 2] = lut[screen.input_bytes[i * 4 + 2] as usize];
+    screen.output_bytes[i * 3] = screen.lut[screen.input_bytes[i * 4] as usize];
+    screen.output_bytes[i * 3 + 1] = screen.lut[screen.input_bytes[i * 4 + 1] as usize];
+    screen.output_bytes[i * 3 + 2] = screen.lut[screen.input_bytes[i * 4 + 2] as usize];
   }
 }
 

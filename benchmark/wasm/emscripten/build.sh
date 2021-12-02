@@ -10,11 +10,11 @@ pushd /wasm/halide
   g++ -o /tmp/gen preprocess.cpp preprocess_lut.cpp postprocess.cpp /Halide/share/Halide/tools/GenGen.cpp -I /Halide/include/ -lHalide -L /Halide/lib/ -lm -lpthread -ldl -std=c++17 -Wl,-rpath /Halide/lib
   mkdir -p ../lib ../lib_simd
   /tmp/gen -g preprocess_task target=wasm-32-wasmrt-wasm_bulk_memory -o ../lib
-  /tmp/gen -g preprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_threads-wasm_bulk_memory -o ../lib_simd
+  /tmp/gen -g preprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_bulk_memory -o ../lib_simd
   /tmp/gen -g preprocess_task_lut target=wasm-32-wasmrt-wasm_bulk_memory -o ../lib
   /tmp/gen -g preprocess_task_lut target=wasm-32-wasmrt-wasm_simd128-wasm_threads-wasm_bulk_memory -o ../lib_simd
   /tmp/gen -g postprocess_task target=wasm-32-wasmrt-wasm_bulk_memory -o ../lib
-  /tmp/gen -g postprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_threads-wasm_bulk_memory -o ../lib_simd
+  /tmp/gen -g postprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_bulk_memory -o ../lib_simd
 popd
 
 pushd /wasm
@@ -23,6 +23,8 @@ pushd /wasm
   pushd build
     emmake cmake -DCMAKE_BUILD_TYPE=Release ..
     emmake cmake --build . --config Release
+    emrun --browser chrome --browser_args="--headless --disable-gpu --no-sandbox --remote-debugging-port=9222" wasm_test.html -- --gtest_color=yes
+    # emrun --browser firefox --browser_args="--headless" wasm_test.html
     mv *.wasm *.js /wasm/bin
   popd
   rm -r build

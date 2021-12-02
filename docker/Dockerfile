@@ -151,8 +151,12 @@ RUN /emsdk/upstream/emscripten/emcmake cmake ${CMAKE_OPTS} ..
 RUN /emsdk/upstream/emscripten/emmake cmake --build . --config Release -j$(nproc)
 RUN /emsdk/upstream/emscripten/emmake cmake --install . --prefix /pytorch_build
 
+FROM base AS browser_setup
+RUN apt-get install -y libappindicator1 fonts-liberation libnss3 libdrm2 libgbm1 xdg-utils firefox
+RUN curl -O https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && dpkg -i google-chrome-stable_current_amd64.deb
+
 ###
-FROM base AS artifact
+FROM browser_setup AS artifact
 WORKDIR /
 # COPY --from=tensorflow_builder /tensorflow_src /tensorflow_src
 # COPY --from=tensorflow_builder /tflite_build /tflite_build
@@ -167,3 +171,4 @@ COPY --from=halide_builder /Halide /Halide
 
 # COPY --from=tensorflow_builder /root/.cache /root/.cache
 # COPY --from=tensorflow_builder /tflite /tflite
+

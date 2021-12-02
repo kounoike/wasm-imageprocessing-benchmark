@@ -98,7 +98,7 @@ function do_benchmark (proc, name, fn, count) {
   const tr = document.createElement('tr')
   const th = document.createElement('th')
   const td = document.createElement('td')
-  th.innerText = `${proc} by ${name}`
+  th.innerText = `${name}`
   td.innerText = `${duration.toFixed(2)}`
   tr.appendChild(th)
   tr.appendChild(td)
@@ -113,7 +113,9 @@ async function benchmark () {
   wasmModule._initialize_lut()
   wasmSimdModule._initialize_lut()
 
-  const canvas = new OffscreenCanvas(width, height)
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
   const ctx = canvas.getContext('2d')
   const imageData = ctx.createImageData(width, height)
 
@@ -140,61 +142,61 @@ async function benchmark () {
       const benchmarks = [
         {
           proc: 'Preprocess',
-          name: 'JavaScript',
+          name: 'JavaScript/Naive',
           count: 100,
           fn: () => byJavaScript(imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'JavaScript(LUT)',
+          name: 'JavaScript/LUT',
           count: 100,
           fn: () => byJavaScriptLut(imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'C++',
+          name: 'C++/Naive',
           count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_naive', imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'C++(LUT)',
+          name: 'C++/LUT',
           count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_lut', imageData, width, height)
         },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++/LUT/UINT32',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmModule, '_preprocess_lut_u32', imageData, width, height)
+        // },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++/LUT/UINT32/struct',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmModule, '_preprocess_lut_struct', imageData, width, height)
+        // },
         {
           proc: 'Preprocess',
-          name: 'C++(LUT/UINT32)',
-          count: 100,
-          fn: () =>
-            byWasm(wasmModule, '_preprocess_lut_u32', imageData, width, height)
-        },
-        {
-          proc: 'Preprocess',
-          name: 'C++(LUT/UINT32/struct)',
-          count: 100,
-          fn: () =>
-            byWasm(wasmModule, '_preprocess_lut_struct', imageData, width, height)
-        },
-        {
-          proc: 'Preprocess',
-          name: 'C++(LUT/UINT64)',
+          name: 'C++/LUT/UINT64',
           count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_lut_u64', imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'OpenCV',
+          name: 'C++/OpenCV/cvtColor+convertTo',
           count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_opencv', imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'OpenCV(LUT)',
+          name: 'C++/OpenCV/cvtColor+LUT',
           count: 100,
           fn: () =>
             byWasm(
@@ -207,14 +209,14 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'Halide',
+          name: 'C++/Halide/Naive',
           count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_halide', imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'Halide(LUT)',
+          name: 'C++/Halide/LUT',
           count: 100,
           fn: () =>
             byWasm(
@@ -227,7 +229,7 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'Naive(SIMD)',
+          name: 'C++(SIMD)/Naive',
           count: 100,
           fn: () =>
             byWasm(
@@ -240,35 +242,35 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'LUT(SIMD)',
+          name: 'C++(SIMD)/LUT',
           count: 100,
           fn: () =>
             byWasm(wasmSimdModule, '_preprocess_lut', imageData, width, height)
         },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++(SIMD)/LUT/UINT32',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmSimdModule, '_preprocess_lut_u32', imageData, width, height)
+        // },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++(SIMD)/LUT/UINT32/struct',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmSimdModule, '_preprocess_lut_struct', imageData, width, height)
+        // },
         {
           proc: 'Preprocess',
-          name: 'C++(SIMD/LUT/UINT32)',
-          count: 100,
-          fn: () =>
-            byWasm(wasmSimdModule, '_preprocess_lut_u32', imageData, width, height)
-        },
-        {
-          proc: 'Preprocess',
-          name: 'C++(SIMD/LUT/UINT32/struct)',
-          count: 100,
-          fn: () =>
-            byWasm(wasmSimdModule, '_preprocess_lut_struct', imageData, width, height)
-        },
-        {
-          proc: 'Preprocess',
-          name: 'C++(SIMD/LUT/UINT64)',
+          name: 'C++(SIMD)/LUT/UINT64',
           count: 100,
           fn: () =>
             byWasm(wasmSimdModule, '_preprocess_lut_u64', imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'byHand SIMD(SIMD)',
+          name: 'C++(SIMD)/Naive/HandWrittenSIMD',
           count: 100,
           fn: () =>
             byWasm(
@@ -281,7 +283,7 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'byHand SIMD(LUT/SIMD)',
+          name: 'C++(SIMD)/LUT/HandWrittenSIMD',
           count: 100,
           fn: () =>
             byWasm(
@@ -294,7 +296,7 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'OpenCV(SIMD)',
+          name: 'C++(SIMD)/OpenCV/cvtColor+convertTo',
           count: 100,
           fn: () =>
             byWasm(
@@ -307,7 +309,7 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'OpenCV(LUT/SIMD)',
+          name: 'C++(SIMD)/OpenCV/cvtColor+LUT',
           count: 100,
           fn: () =>
             byWasm(
@@ -320,14 +322,14 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'Halide(SIMD)',
+          name: 'C++(SIMD)/Halide/Naive',
           count: 100,
           fn: () =>
             byWasm(wasmModule, '_preprocess_halide', imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'Halide(LUT/SIMD)',
+          name: 'C++(SIMD)/Halide/LUT',
           count: 100,
           fn: () =>
             byWasm(
@@ -340,13 +342,13 @@ async function benchmark () {
         },
         {
           proc: 'Preprocess',
-          name: 'Rust 1',
+          name: 'Rust/Naive',
           count: 100,
           fn: () => byRust(screen, exec1, memory, imageData, width, height)
         },
         {
           proc: 'Preprocess',
-          name: 'Rust LUT',
+          name: 'Rust/LUT',
           count: 100,
           fn: () => byRust(screen, exec_lut, memory, imageData, width, height)
         },
