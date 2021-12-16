@@ -1,13 +1,16 @@
 // Build command:
-// g++ -o gen gen.cpp ../../../../Halide-11.0.1-x86-64-linux/share/Halide/tools/GenGen.cpp -I ../../../../Halide-11.0.1-x86-64-linux/include/ -lHalide -L ../../../../Halide-11.0.1-x86-64-linux/lib/ -std=c++17 -Wl,-rpath ../../../../Halide-11.0.1-x86-64-linux/lib
-// Wasm lib generate command:
-// ./gen -g input_task target=wasm-32-wasmrt-wasm_simd128-wasm_threads-wasm_bulk_memory -o ../lib
+// g++ -o gen gen.cpp
+// ../../../../Halide-11.0.1-x86-64-linux/share/Halide/tools/GenGen.cpp -I
+// ../../../../Halide-11.0.1-x86-64-linux/include/ -lHalide -L
+// ../../../../Halide-11.0.1-x86-64-linux/lib/ -std=c++17 -Wl,-rpath
+// ../../../../Halide-11.0.1-x86-64-linux/lib Wasm lib generate command:
+// ./gen -g input_task
+// target=wasm-32-wasmrt-wasm_simd128-wasm_threads-wasm_bulk_memory -o ../lib
 
 #include <Halide.h>
 
-
 class PreprocessTaskLut : public Halide::Generator<PreprocessTaskLut> {
-public:
+ public:
   Halide::GeneratorInput<Halide::Buffer<std::uint8_t>> input{"input", 3};
   Halide::GeneratorOutput<Halide::Buffer<float_t>> output{"output", 3};
 
@@ -27,15 +30,14 @@ public:
     output.dim(2).set_stride(1);
     output.dim(2).set_bounds(0, 3);
 
-    // input.set_estimates({{0, 1920}, {0, 1080}, {0, 4}});
-    // output.set_estimates({{0, 1920}, {0, 1080}, {0, 3}});
+    input.set_estimates({{0, 1920}, {0, 1080}, {0, 4}});
+    output.set_estimates({{0, 1920}, {0, 1080}, {0, 3}});
 
-    lut.compute_root();
+    // lut.compute_root();
 
-    output.compute_root();
-    output.parallel(y).vectorize(x, 16).reorder(c, x, y).unroll(c);
+    // output.compute_root();
+    // output.parallel(y).vectorize(x, 16).reorder(c, x, y).unroll(c);
   }
 };
-
 
 HALIDE_REGISTER_GENERATOR(PreprocessTaskLut, preprocess_task_lut);

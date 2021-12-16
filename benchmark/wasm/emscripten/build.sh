@@ -8,13 +8,19 @@ cd /emsdk
 # halide generator
 pushd /wasm/halide
   g++ -o /tmp/gen preprocess.cpp preprocess_lut.cpp postprocess.cpp /Halide/share/Halide/tools/GenGen.cpp -I /Halide/include/ -lHalide -L /Halide/lib/ -lm -lpthread -ldl -std=c++17 -Wl,-rpath /Halide/lib
-  mkdir -p ../lib ../lib_simd
+  mkdir -p ../lib ../lib_simd ../lib_threads ../lib_simd_threads
   /tmp/gen -g preprocess_task target=wasm-32-wasmrt-wasm_bulk_memory -o ../lib
   /tmp/gen -g preprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_bulk_memory -o ../lib_simd
+  /tmp/gen -g preprocess_task target=wasm-32-wasmrt-wasm_bulk_memory-wasm_threads -o ../lib_threads
+  /tmp/gen -g preprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_bulk_memory-wasm_threads -o ../lib_simd_threads
   /tmp/gen -g preprocess_task_lut target=wasm-32-wasmrt-wasm_bulk_memory -o ../lib
   /tmp/gen -g preprocess_task_lut target=wasm-32-wasmrt-wasm_simd128-wasm_threads-wasm_bulk_memory -o ../lib_simd
+  /tmp/gen -g preprocess_task_lut target=wasm-32-wasmrt-wasm_bulk_memory-wasm_threads -o ../lib_threads
+  /tmp/gen -g preprocess_task_lut target=wasm-32-wasmrt-wasm_simd128-wasm_threads-wasm_bulk_memory-wasm_threads -o ../lib_simd_threads
   /tmp/gen -g postprocess_task target=wasm-32-wasmrt-wasm_bulk_memory -o ../lib
   /tmp/gen -g postprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_bulk_memory -o ../lib_simd
+  /tmp/gen -g postprocess_task target=wasm-32-wasmrt-wasm_bulk_memory-wasm_threads -o ../lib_threads
+  /tmp/gen -g postprocess_task target=wasm-32-wasmrt-wasm_simd128-wasm_bulk_memory-wasm_threads -o ../lib_simd_threads
 popd
 
 pushd /wasm

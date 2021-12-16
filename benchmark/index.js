@@ -7,9 +7,10 @@ const height = 1080
 // const height = 144
 // const width = 640
 // const height = 360
+// const width = 640 
+// const height = 480
 
-function byJavaScript (imageData, width, height) {
-  const array = new Float32Array(width * height * 3)
+function byJavaScript (imageData, array, width, height) {
   for (let i = 0; i < width * height; ++i) {
     array[i * 3] = imageData.data[i * 4] / 255
     array[i * 3 + 1] = imageData.data[i * 4 + 1] / 255
@@ -23,8 +24,7 @@ for (let i = 0; i < 256; ++i) {
   lut[i] = i / 255
 }
 
-function byJavaScriptLut (imageData, width, height) {
-  const array = new Float32Array(width * height * 3)
+function byJavaScriptLut (imageData, array, width, height) {
   for (let i = 0; i < width * height; ++i) {
     array[i * 3] = lut[imageData.data[i * 4]]
     array[i * 3 + 1] = lut[imageData.data[i * 4 + 1]]
@@ -108,16 +108,20 @@ function do_benchmark (proc, name, fn, count) {
 
 async function benchmark () {
   const wasmModule = await createBenchmarkModule()
+  const wasmThreadsModule = await createBenchmarkThreadsModule()
   const wasmSimdModule = await createBenchmarkSimdModule()
-  console.log(wasmModule)
+  const wasmSimdThreadsModule = await createBenchmarkSimdThreadsModule()
   wasmModule._initialize_lut()
   wasmSimdModule._initialize_lut()
+  wasmThreadsModule._initialize_lut()
+  wasmSimdThreadsModule._initialize_lut()
 
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext('2d')
   const imageData = ctx.createImageData(width, height)
+  const array = new Float32Array(width * height * 3)
 
   // JPEG decode/encode
   const url = "./img/sample.jpg";
@@ -144,13 +148,13 @@ async function benchmark () {
           proc: 'Preprocess',
           name: 'JavaScript/Naive',
           count: 100,
-          fn: () => byJavaScript(imageData, width, height)
+          fn: () => byJavaScript(imageData, array, width, height)
         },
         {
           proc: 'Preprocess',
           name: 'JavaScript/LUT',
           count: 100,
-          fn: () => byJavaScriptLut(imageData, width, height)
+          fn: () => byJavaScriptLut(imageData, array, width, height)
         },
         {
           proc: 'Preprocess',
@@ -325,7 +329,7 @@ async function benchmark () {
           name: 'C++(SIMD)/Halide/Naive',
           count: 100,
           fn: () =>
-            byWasm(wasmModule, '_preprocess_halide', imageData, width, height)
+            byWasm(wasmSimdModule, '_preprocess_halide', imageData, width, height)
         },
         {
           proc: 'Preprocess',
@@ -333,7 +337,195 @@ async function benchmark () {
           count: 100,
           fn: () =>
             byWasm(
-              wasmModule,
+              wasmSimdModule,
+              '_preprocess_halide_lut',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(Threads)/Naive',
+          count: 100,
+          fn: () =>
+            byWasm(wasmThreadsModule, '_preprocess_naive', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(Threads)/LUT',
+          count: 100,
+          fn: () =>
+            byWasm(wasmThreadsModule, '_preprocess_lut', imageData, width, height)
+        },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++/LUT/UINT32',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmThreadsModule, '_preprocess_lut_u32', imageData, width, height)
+        // },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++/LUT/UINT32/struct',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmThreadsModule, '_preprocess_lut_struct', imageData, width, height)
+        // },
+        {
+          proc: 'Preprocess',
+          name: 'C++(Threads)/LUT/UINT64',
+          count: 100,
+          fn: () =>
+            byWasm(wasmThreadsModule, '_preprocess_lut_u64', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(Threads)/OpenCV/cvtColor+convertTo',
+          count: 100,
+          fn: () =>
+            byWasm(wasmThreadsModule, '_preprocess_opencv', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(Threads)/OpenCV/cvtColor+LUT',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmThreadsModule,
+              '_preprocess_opencv_lut',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(Threads)/Halide/Naive',
+          count: 100,
+          fn: () =>
+            byWasm(wasmThreadsModule, '_preprocess_halide', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(Threads)/Halide/LUT',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmThreadsModule,
+              '_preprocess_halide_lut',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/Naive',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdThreadsModule,
+              '_preprocess_naive',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/LUT',
+          count: 100,
+          fn: () =>
+            byWasm(wasmSimdThreadsModule, '_preprocess_lut', imageData, width, height)
+        },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++(SIMD)/LUT/UINT32',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmSimdModule, '_preprocess_lut_u32', imageData, width, height)
+        // },
+        // {
+        //   proc: 'Preprocess',
+        //   name: 'C++(SIMD)/LUT/UINT32/struct',
+        //   count: 100,
+        //   fn: () =>
+        //     byWasm(wasmSimdModule, '_preprocess_lut_struct', imageData, width, height)
+        // },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/LUT/UINT64',
+          count: 100,
+          fn: () =>
+            byWasm(wasmSimdThreadsModule, '_preprocess_lut_u64', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/Naive/HandWrittenSIMD',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdThreadsModule,
+              '_preprocess_simd',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/LUT/HandWrittenSIMD',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdThreadsModule,
+              '_preprocess_simd_lut',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/OpenCV/cvtColor+convertTo',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdThreadsModule,
+              '_preprocess_opencv',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/OpenCV/cvtColor+LUT',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdThreadsModule,
+              '_preprocess_opencv_lut',
+              imageData,
+              width,
+              height
+            )
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/Halide/Naive',
+          count: 100,
+          fn: () =>
+            byWasm(wasmSimdThreadsModule, '_preprocess_halide', imageData, width, height)
+        },
+        {
+          proc: 'Preprocess',
+          name: 'C++(SIMD/Threads)/Halide/LUT',
+          count: 100,
+          fn: () =>
+            byWasm(
+              wasmSimdThreadsModule,
               '_preprocess_halide_lut',
               imageData,
               width,
