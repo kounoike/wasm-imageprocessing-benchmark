@@ -2,6 +2,8 @@
 
 set -xe
 
+cd $(dirname $0)
+
 mkdir -p dist
 
 cp index.html index.js dist/

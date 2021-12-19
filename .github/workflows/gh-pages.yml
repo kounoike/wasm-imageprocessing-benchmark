@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: copy
-        run: pwd && ls && ./deploy_site.sh
-        working-directory: ./
+        run: ./benchmark/deploy_site.sh
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
