@@ -1,5 +1,5 @@
-const rsMod = import('./wasm/rust/pkg/wasmcopy_rs')
-const rsBg = import('./wasm/rust/pkg/wasmcopy_rs_bg')
+const rsMod = import('./wasm/rust/pkg/wasmcopy_rs.js')
+const rsBg = import('./wasm/rust/pkg/wasmcopy_rs_bg.wasm')
 
 const canUseThreads = 'SharedArrayBuffer' in window
 
