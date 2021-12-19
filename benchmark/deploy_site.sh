@@ -6,7 +6,7 @@ cd $(dirname $0)
 
 mkdir -p dist
 
-cp index.html index.js dist/
+cp index.html index.js _headers dist/
 
 mkdir -p dist/img
 cp img/*.jpg dist/img
