@@ -118,3 +118,6 @@ dist
 
 # python
 .venv/
+
+build/
+build_wasm/

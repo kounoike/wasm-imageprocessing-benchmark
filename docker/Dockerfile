@@ -81,15 +81,15 @@ RUN python3  platforms/js/build_js.py build_wasm_simd_threads ${OPENCV_CONFIG_FL
 
 ENV OPENCV_JS_WHITELIST /opencv/platforms/js/opencv_js.config.py
 
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm --config Release --parallel $(nproc)
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd --config Release --parallel $(nproc)
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_threads --config Release --parallel $(nproc)
-RUN /emsdk/upstream/emscripten/emmake cmake --build /opencv/build_wasm_simd_threads --config Release --parallel $(nproc)
+RUN cmake --build /opencv/build_wasm --config Release --parallel $(nproc)
+RUN cmake --build /opencv/build_wasm_simd --config Release --parallel $(nproc)
+RUN cmake --build /opencv/build_wasm_threads --config Release --parallel $(nproc)
+RUN cmake --build /opencv/build_wasm_simd_threads --config Release --parallel $(nproc)
 
-RUN mkdir -p /opencv_build/wasm && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm --prefix /opencv_build/wasm
-RUN mkdir -p /opencv_build/wasm_simd && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm_simd --prefix /opencv_build/wasm_simd
-RUN mkdir -p /opencv_build/wasm_threads && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm_threads --prefix /opencv_build/wasm_threads
-RUN mkdir -p /opencv_build/wasm_simd_threads && /emsdk/upstream/emscripten/emmake cmake --install /opencv/build_wasm_simd_threads --prefix /opencv_build/wasm_simd_threads
+RUN cmake --install /opencv/build_wasm
+RUN cmake --install /opencv/build_wasm_simd
+RUN cmake --install /opencv/build_wasm_threads
+RUN cmake --install /opencv/build_wasm_simd_threads
 
 # ### STAGE:onnx_builder
 # FROM base AS onnx_builder
@@ -164,7 +164,7 @@ WORKDIR /
 # COPY --from=tensorflow_builder /tensorflow_src /tensorflow_src
 # COPY --from=tensorflow_builder /tflite_build /tflite_build
 # COPY --from=tensorflow_builder /mediapipe /mediapipe
-COPY --from=opencv_builder /opencv_build /opencv_build
+COPY --from=opencv_builder /opencv /opencv
 # COPY --from=onnx_builder /onnxruntime /onnxruntime
 COPY --from=halide_builder /Halide /Halide
 # COPY --from=pytorch_builder /libtorch_build /libtorch_build

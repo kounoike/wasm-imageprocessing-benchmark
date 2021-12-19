@@ -1,4 +1,8 @@
+#ifdef EMSCRIPTEN
 #include <emscripten.h>
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -363,8 +367,8 @@ int postprocess_naive_old(int width, int height, float threshold) {
   for (int i = 0; i < width * height; ++i) {
     float bg = postprocessInferenceResultBuffer[i * 2];
     float fg = postprocessInferenceResultBuffer[i * 2 + 1];
-    float bgexp = std::expf(bg);
-    float fgexp = std::expf(fg);
+    float bgexp = std::exp(bg);
+    float fgexp = std::exp(fg);
     float val = fgexp / (fgexp + bgexp);
     if (val > threshold) {
       postprocessOutputImageBuffer[i * 4] = postprocessInputImageBuffer[i * 4];
