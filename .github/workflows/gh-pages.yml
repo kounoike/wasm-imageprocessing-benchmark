@@ -9,8 +9,10 @@ jobs:
   deploy:
     runs-on: ubuntu-20.04
     steps:
+      - uses: actions/checkout@v2
       - name: copy
-        run: pwd && ls -lR . && ./benchmark/deploy_site.sh
+        run: ./deploy_site.sh
+        working-directory: ./benchmark
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
