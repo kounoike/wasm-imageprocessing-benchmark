@@ -1,0 +1,16 @@
+{
+  "name": "wasmcopy_rs",
+  "collaborators": [
+    "KOUNOIKE Yuusuke <kounoike.yuusuke@gmail.com>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "wasmcopy_rs_bg.wasm",
+    "wasmcopy_rs.js",
+    "wasmcopy_rs_bg.js",
+    "wasmcopy_rs.d.ts"
+  ],
+  "module": "wasmcopy_rs.js",
+  "types": "wasmcopy_rs.d.ts",
+  "sideEffects": false
+}
