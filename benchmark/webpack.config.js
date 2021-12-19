@@ -9,7 +9,11 @@ module.exports = {
     port: 8000,
     allowedHosts: [
       '.ngrok.io'
-    ]
+    ],
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin'
+    }
   },
   mode: "development"
 };

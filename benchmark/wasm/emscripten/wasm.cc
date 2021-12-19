@@ -265,6 +265,32 @@ int preprocess_simd_lut(int width, int height) {
   return 0;
 }
 
+// Thread
+EMSCRIPTEN_KEEPALIVE
+int preprocess_thread_naive(int width, int height) {
+  parallel_for_(cv::Range(0, width * height), [&](const cv::Range &range) {
+    for (int r = range.start; r < range.end; ++r) {
+      outputImageBuffer[r * 3] = inputImageBuffer[r * 4] / 255.f;
+      outputImageBuffer[r * 3 + 1] = inputImageBuffer[r * 4 + 1] / 255.f;
+      outputImageBuffer[r * 3 + 2] = inputImageBuffer[r * 4 + 2] / 255.f;
+    }
+  });
+  return 0;
+}
+
+// Thread
+EMSCRIPTEN_KEEPALIVE
+int preprocess_thread_lut(int width, int height) {
+  parallel_for_(cv::Range(0, width * height), [&](const cv::Range &range) {
+    for (int r = range.start; r < range.end; ++r) {
+      outputImageBuffer[r * 3] = lut[inputImageBuffer[r * 4]];
+      outputImageBuffer[r * 3 + 1] = lut[inputImageBuffer[r * 4 + 1]];
+      outputImageBuffer[r * 3 + 2] = lut[inputImageBuffer[r * 4 + 2]];
+    }
+  });
+  return 0;
+}
+
 // by OpenCV
 EMSCRIPTEN_KEEPALIVE
 int preprocess_opencv(int width, int height) {

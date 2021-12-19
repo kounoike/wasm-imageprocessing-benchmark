@@ -87,6 +87,28 @@ pub fn exec_lut(screen: &mut Screen) {
   }
 }
 
+#[wasm_bindgen]
+pub fn exec1_10(screen: &mut Screen) {
+  for _ in 0..10 {
+    for i in 0..screen.width * screen.height {
+      screen.output_bytes[i * 3] = (screen.input_bytes[i * 4] as f32) / 255f32;
+      screen.output_bytes[i * 3 + 1] = (screen.input_bytes[i * 4 + 1] as f32) / 255f32;
+      screen.output_bytes[i * 3 + 2] = (screen.input_bytes[i * 4 + 2] as f32) / 255f32;
+    }
+  }
+}
+
+#[wasm_bindgen]
+pub fn exec_lut10(screen: &mut Screen) {
+  for _ in 0..10 {
+    for i in 0..screen.width * screen.height {
+      screen.output_bytes[i * 3] = screen.lut[screen.input_bytes[i * 4] as usize];
+      screen.output_bytes[i * 3 + 1] = screen.lut[screen.input_bytes[i * 4 + 1] as usize];
+      screen.output_bytes[i * 3 + 2] = screen.lut[screen.input_bytes[i * 4 + 2] as usize];
+    }
+  }
+}
+
 // #[wasm_bindgen]
 // pub fn exec2(screen: &mut Screen) {
 //     for i in 0..screen.width * screen.height {
