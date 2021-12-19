@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: copy
         run: ./deploy_site.sh
-          working-directory: benchmark
+        working-directory: ./benchmark
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
